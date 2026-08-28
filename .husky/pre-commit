@@ -1,0 +1,2 @@
+# 스테이징된 파일에 ESLint/Prettier 를 적용하고 타입 검사를 실행한다.
+npx lint-staged

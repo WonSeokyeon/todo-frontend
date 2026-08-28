@@ -1,0 +1,2 @@
+# 커밋 메시지가 Conventional Commits 형식인지 검사한다. (CLAUDE.md 6장)
+npx --no-install commitlint --edit "$1"

@@ -1,0 +1,17 @@
+# 빌드 산출물
+.next/
+out/
+build/
+dist/
+coverage/
+
+# 의존성
+node_modules/
+
+# 자동 생성 파일
+next-env.d.ts
+package-lock.json
+
+# 이 파일들은 Prettier 로 다루지 않는다
+*.log
+public/

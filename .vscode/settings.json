@@ -1,0 +1,27 @@
+{
+  // Tailwind CSS 4 의 @theme, @apply 등을 CSS 린터가 오류로 보지 않게 한다.
+  "css.lint.unknownAtRules": "ignore",
+
+  // 저장 시 Prettier 로 서식을 맞추고 ESLint 자동 수정을 적용한다.
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // 프로젝트에 설치된 TypeScript 버전을 사용한다. (VS Code 내장 버전과의 불일치 방지)
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // import 자동 정리 시 상대경로 대신 @/ 별칭을 쓴다.
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" }
+}
