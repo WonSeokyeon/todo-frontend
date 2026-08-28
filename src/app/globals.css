@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * 디자인 토큰 (CLAUDE.md 8장)
+ * 다크 모드는 prefers-color-scheme 미디어쿼리 전략만 사용한다.
+ * class 전략(.dark)이나 토글 UI는 MVP 범위 밖이다 — next-themes 등을 도입하지 않는다.
+ * @theme은 최상위에만 올 수 있으므로 라이트 값을 여기서 선언해 유틸리티를 만들고,
+ * 다크 값은 아래 :root에서 커스텀 프로퍼티만 덮어쓴다.
+ */
+@theme {
+  --color-background: #fafafa;
+  --color-foreground: #171717;
+  --color-card: #ffffff;
+  --color-card-foreground: #171717;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #171717;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #737373;
+  --color-border: #e5e5e5;
+  --color-input: #e5e5e5;
+  --color-ring: #4f46e5;
+
+  --color-primary: #4f46e5;
+  --color-primary-foreground: #fafafa;
+  --color-secondary: #f5f5f5;
+  --color-secondary-foreground: #171717;
+  --color-accent: #4f46e5;
+  --color-accent-foreground: #fafafa;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
+
+  --color-priority-high: #ef4444;
+  --color-priority-medium: #f59e0b;
+  --color-priority-low: #10b981;
+
+  --font-sans: var(--font-pretendard);
+
+  /* shadcn 컴포넌트가 참조하는 radius 체계(카드 rounded-xl, 버튼/인풋 rounded-lg — CLAUDE.md 8장) */
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0a0a0a;
+    --color-foreground: #fafafa;
+    --color-card: #171717;
+    --color-card-foreground: #fafafa;
+    --color-popover: #171717;
+    --color-popover-foreground: #fafafa;
+    --color-muted: #262626;
+    --color-muted-foreground: #a3a3a3;
+    --color-border: #262626;
+    --color-input: #262626;
+
+    --color-secondary: #262626;
+    --color-secondary-foreground: #fafafa;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

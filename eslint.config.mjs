@@ -1,11 +1,20 @@
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
 import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier/flat";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Next.js 15의 eslint-config-next는 flat config를 직접 내보내지 않는다.
+// FlatCompat으로 기존 extends 방식(next/core-web-vitals, next/typescript)을 감싼다.
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
 const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
 
   // eslint-config-next 의 기본 ignore 를 덮어쓴다.
   globalIgnores([
@@ -15,7 +24,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // shadcn/ui 가 생성한 컴포넌트는 원본 형태를 유지한다.
     // 규칙 위반이 있으면 개별 파일에서 처리한다.
-    "components/ui/**",
+    "src/components/ui/**",
   ]),
 
   // ── 프로젝트 규칙 (CLAUDE.md 4장 TypeScript 컨벤션) ──
