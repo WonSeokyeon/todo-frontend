@@ -33,18 +33,30 @@ export function useTodo(id: number) {
     queryKey: queryKeys.todo(id),
     queryFn: () => apiClient.get<TodoResponse>(`/todos/${id}`),
     enabled: Number.isFinite(id),
+    // TODO_NOT_FOUND(404)는 재시도해도 결과가 같다. 실측 중 재시도가 fetchStatus를
+    // "paused"에 가둬 화면이 로딩 상태에서 멈추는 문제도 함께 발견해 끄기로 했다.
+    retry: false,
   });
 }
 
 export function useCreateTodo() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: TodoCreateRequest) => apiClient.post<TodoResponse>("/todos", body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
   });
 }
 
 export function useUpdateTodo(id: number) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: TodoUpdateRequest) => apiClient.put<TodoResponse>(`/todos/${id}`, body),
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.todo(id), data);
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
   });
 }
 

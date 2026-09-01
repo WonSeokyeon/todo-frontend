@@ -14,3 +14,17 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
     </div>
   );
 }
+
+// /todos/[id] 로딩 중에는 폼 형태 스켈레톤을 보여준다 (UX-01).
+export function FormSkeleton() {
+  return (
+    <div className="flex flex-col gap-4" role="status" aria-label="불러오는 중">
+      <SkeletonBase className="h-9 w-full" />
+      <SkeletonBase className="h-40 w-full" />
+      <div className="flex gap-4">
+        <SkeletonBase className="h-9 flex-1" />
+        <SkeletonBase className="h-9 flex-1" />
+      </div>
+    </div>
+  );
+}
