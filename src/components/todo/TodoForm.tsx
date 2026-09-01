@@ -1,0 +1,200 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { CalendarIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TodoEditor } from "@/components/todo/TodoEditor";
+import { validateContentLength, validateTitle } from "@/lib/validation";
+import type { Priority } from "@/types/todo";
+
+const PRIORITY_LABEL: Record<Priority, string> = {
+  HIGH: "높음",
+  MEDIUM: "보통",
+  LOW: "낮음",
+};
+
+export interface TodoFormValues {
+  title: string;
+  content: string;
+  priority: Priority;
+  dueDate: string | null;
+}
+
+interface TodoFormProps {
+  initialValues?: TodoFormValues;
+  onSubmit: (values: TodoFormValues) => void;
+  onCancel: () => void;
+  onDelete?: () => void;
+  isSubmitting?: boolean;
+  isDeleting?: boolean;
+  submitError?: string | null;
+}
+
+const DEFAULT_VALUES: TodoFormValues = {
+  title: "",
+  content: "",
+  priority: "MEDIUM",
+  dueDate: null,
+};
+
+// /todos/new와 /todos/[id]가 재사용한다. 완료 체크박스는 여기 두지 않는다 — 완료는 목록에서만 바꾼다.
+export function TodoForm({
+  initialValues,
+  onSubmit,
+  onCancel,
+  onDelete,
+  isSubmitting = false,
+  isDeleting = false,
+  submitError,
+}: TodoFormProps) {
+  const [title, setTitle] = useState(initialValues?.title ?? DEFAULT_VALUES.title);
+  const [content, setContent] = useState(initialValues?.content ?? DEFAULT_VALUES.content);
+  const [priority, setPriority] = useState<Priority>(
+    initialValues?.priority ?? DEFAULT_VALUES.priority,
+  );
+  const [dueDate, setDueDate] = useState<string | null>(
+    initialValues?.dueDate ?? DEFAULT_VALUES.dueDate,
+  );
+  const [dueDateOpen, setDueDateOpen] = useState(false);
+
+  const titleError =
+    title.length > 0 && !validateTitle(title) ? "제목은 1~200자여야 합니다." : null;
+  const canSubmit =
+    validateTitle(title) && validateContentLength(content) && !isSubmitting && !isDeleting;
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!canSubmit) return;
+    onSubmit({ title, content, priority, dueDate });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      {submitError && (
+        <p role="alert" className="text-sm text-destructive">
+          {submitError}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="todo-title">제목</Label>
+        <Input
+          id="todo-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          aria-invalid={!!titleError}
+          maxLength={200}
+          required
+        />
+        {titleError && (
+          <p role="alert" className="text-xs text-destructive">
+            {titleError}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="todo-content">본문</Label>
+        <TodoEditor content={content} onChange={setContent} />
+      </div>
+
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <Label htmlFor="todo-priority">우선순위</Label>
+          <Select value={priority} onValueChange={(value) => setPriority(value as Priority)}>
+            <SelectTrigger id="todo-priority" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(PRIORITY_LABEL) as Priority[]).map((value) => (
+                <SelectItem key={value} value={value}>
+                  {PRIORITY_LABEL[value]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-1.5">
+          <Label htmlFor="todo-due-date">마감일</Label>
+          <Popover open={dueDateOpen} onOpenChange={setDueDateOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id="todo-due-date"
+                type="button"
+                variant="outline"
+                className="w-full justify-start font-normal"
+              >
+                <CalendarIcon className="size-4" />
+                {dueDate
+                  ? format(new Date(dueDate), "yyyy년 M월 d일", { locale: ko })
+                  : "마감일 선택"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                locale={ko}
+                selected={dueDate ? new Date(dueDate) : undefined}
+                onSelect={(date) => {
+                  setDueDate(date ? format(date, "yyyy-MM-dd") : null);
+                  setDueDateOpen(false);
+                }}
+              />
+              {dueDate && (
+                <div className="border-t border-border p-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setDueDate(null);
+                      setDueDateOpen(false);
+                    }}
+                  >
+                    마감일 지우기
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        {onDelete && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onDelete}
+            disabled={isSubmitting || isDeleting}
+            className="mr-auto"
+          >
+            삭제
+          </Button>
+        )}
+        <Button type="button" variant="outline" onClick={onCancel}>
+          취소
+        </Button>
+        <Button type="submit" disabled={!canSubmit}>
+          {isSubmitting ? "저장 중..." : "저장"}
+        </Button>
+      </div>
+    </form>
+  );
+}
