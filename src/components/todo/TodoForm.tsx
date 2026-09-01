@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TodoEditor } from "@/components/todo/TodoEditor";
+import { useLeaveGuard } from "@/hooks/useLeaveGuard";
 import { validateContentLength, validateTitle } from "@/lib/validation";
 import type { Priority } from "@/types/todo";
 
@@ -71,6 +72,25 @@ export function TodoForm({
   );
   const [dueDateOpen, setDueDateOpen] = useState(false);
 
+  // 제목·우선순위·마감일의 초기 스냅샷은 마운트 시점 값으로 고정한다(리렌더에 흔들리지 않도록 ref).
+  const initialSnapshotRef = useRef({
+    title: initialValues?.title ?? DEFAULT_VALUES.title,
+    priority: initialValues?.priority ?? DEFAULT_VALUES.priority,
+    dueDate: initialValues?.dueDate ?? DEFAULT_VALUES.dueDate,
+  });
+  // 본문은 서버 원본과 비교하면 안 된다 — Tiptap이 정규화하므로, setContent() 직후
+  // TodoEditor가 알려주는 값(=onReady)이 준비되기 전까지는 dirty 판정을 보류한다.
+  const [contentBaseline, setContentBaseline] = useState<string | null>(null);
+
+  const isDirty =
+    contentBaseline !== null &&
+    (title !== initialSnapshotRef.current.title ||
+      priority !== initialSnapshotRef.current.priority ||
+      dueDate !== initialSnapshotRef.current.dueDate ||
+      content !== contentBaseline);
+
+  const { confirmLeave } = useLeaveGuard(isDirty);
+
   const titleError =
     title.length > 0 && !validateTitle(title) ? "제목은 1~200자여야 합니다." : null;
   const canSubmit =
@@ -80,6 +100,10 @@ export function TodoForm({
     e.preventDefault();
     if (!canSubmit) return;
     onSubmit({ title, content, priority, dueDate });
+  }
+
+  function handleCancel() {
+    if (confirmLeave()) onCancel();
   }
 
   return (
@@ -109,7 +133,7 @@ export function TodoForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="todo-content">본문</Label>
-        <TodoEditor content={content} onChange={setContent} />
+        <TodoEditor content={content} onChange={setContent} onReady={setContentBaseline} />
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
@@ -188,7 +212,7 @@ export function TodoForm({
             삭제
           </Button>
         )}
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={handleCancel}>
           취소
         </Button>
         <Button type="submit" disabled={!canSubmit}>

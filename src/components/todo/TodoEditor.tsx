@@ -22,6 +22,12 @@ import { cn } from "@/lib/utils";
 interface TodoEditorProps {
   content: string;
   onChange: (html: string) => void;
+  /**
+   * 에디터 생성 직후(=Tiptap이 content를 자기 스키마로 정규화한 결과)를 알려준다.
+   * dirty 판정의 초기 스냅샷은 서버 원본이 아니라 이 값으로 잡아야 한다 — 그러지 않으면
+   * 사용자가 아무것도 고치지 않아도 정규화 차이 때문에 dirty로 오판된다 (CLAUDE.md 8장).
+   */
+  onReady?: (html: string) => void;
 }
 
 function ToolbarButton({
@@ -132,12 +138,19 @@ function Toolbar({ editor }: { editor: Editor }) {
   );
 }
 
-export function TodoEditor({ content, onChange }: TodoEditorProps) {
+export function TodoEditor({ content, onChange, onReady }: TodoEditorProps) {
   const editor = useEditor({
     extensions: buildTiptapExtensions(),
     content: sanitizeHtml(content),
     // Next.js SSR과 함께 쓸 때 하이드레이션 시점 렌더링을 막아 불일치를 방지한다 (Tiptap 공식 권장).
     immediatelyRender: false,
+    onCreate: ({ editor }) => {
+      // content state도 정규화된 값으로 맞춰야 최초 스냅샷(baseline)과 즉시 일치한다.
+      // 그러지 않으면 서버 원본("")과 Tiptap 정규화 결과("<p></p>" 등)가 달라 dirty로 오판된다.
+      const html = editor.getHTML();
+      onChange(html);
+      onReady?.(html);
+    },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
     editorProps: {
       attributes: {
