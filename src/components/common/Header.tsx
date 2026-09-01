@@ -1,11 +1,28 @@
-// 닉네임·로그아웃 자리는 비워둔다 — useAuth가 없는 시점이라 Phase 7에서 연결한다 (CLAUDE.md 7장).
+"use client";
+
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+
 export function Header() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+  }
+
   return (
     <header className="flex h-14 items-center justify-between border-b border-border px-4 sm:px-6">
       <span className="text-base font-semibold">Todo List</span>
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        {/* Phase 7: 닉네임 표시 */}
-        {/* Phase 7: 로그아웃 버튼 */}
+        {/* 이메일은 렌더하지 않는다. user.email이 응답에 들어있어도 화면에는 닉네임만 노출한다 (AUTH-08) */}
+        {user && <span>{user.nickname}</span>}
+        <Button size="sm" variant="ghost" onClick={handleLogout}>
+          로그아웃
+        </Button>
       </div>
     </header>
   );
