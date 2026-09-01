@@ -18,12 +18,28 @@ export function getAccessToken(): string | null {
   return localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+/**
+ * 토큰이 바뀐 사실을 useAuth에 알리는 이벤트.
+ * localStorage는 같은 탭에서 storage 이벤트를 쏘지 않으므로 직접 알려야 한다.
+ * apiClient의 자동 refresh(setAccessToken)와 자동 로그아웃(clearAccessToken)도 이 경로를 지나므로,
+ * 구독자는 토큰을 누가 바꿨든 동일하게 반응한다.
+ */
+export const AUTH_CHANGE_EVENT = "todo-auth:change";
+
+function notifyTokenChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+  }
+}
+
 export function setAccessToken(token: string): void {
   localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  notifyTokenChanged();
 }
 
 export function clearAccessToken(): void {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
+  notifyTokenChanged();
 }
 
 /**
