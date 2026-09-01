@@ -1,11 +1,22 @@
 "use client";
 
-// 토큰 유무에 따른 리다이렉트는 useAuth가 만들어지는 Phase 7에서 연결한다.
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { useAuth } from "@/hooks/useAuth";
+
+// 인증 상태에 따라 /todos 또는 /login으로 보낸다. 판정 중에는 아무것도 그리지 않는다.
 export default function Home() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-background text-foreground">
-      <h1 className="text-lg font-semibold">Todo List</h1>
-      <p className="text-sm text-muted-foreground">스캐폴딩 단계입니다.</p>
-    </div>
-  );
+  const router = useRouter();
+  const { status } = useAuth();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/todos");
+    } else if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, router]);
+
+  return null;
 }
