@@ -1,6 +1,6 @@
 # todo-frontend
 
-Todo List 서비스의 프론트엔드입니다. Next.js 16 (App Router) / React 19 / TypeScript / Tailwind CSS 4 로 구성되어 있습니다.
+Todo List 서비스의 프론트엔드입니다. Next.js 15 (App Router) / React 19 / TypeScript / Tailwind CSS 4 로 구성되어 있습니다.
 
 ---
 
@@ -62,12 +62,11 @@ Tailwind CSS 4 는 설정이 CSS 안에 있으므로 `tailwindStylesheet: "./app
 ### 타입 검사
 
 ```bash
-npm run typecheck   # next typegen && tsc --noEmit
+npm run typecheck   # tsc --noEmit
 ```
 
-Next.js 16 에서 라우트 타입(`PageProps`, `LayoutProps`)은 `next dev` 또는 `next build` 중에만 생성됩니다.
-따라서 `tsc --noEmit` 만 단독으로 실행하면 라우트 타입이 검증되지 않으므로,
-`next typegen` 으로 타입을 먼저 만든 뒤 검사합니다.
+`tsconfig.json`의 `include`에 `.next/types/**/*.ts`가 포함되어 있어, Next.js가 `next dev` 또는 `next build` 실행 중에 생성하는 라우트 타입(`PageProps` 등)도 함께 검사 대상이 됩니다.
+저장소를 새로 받은 직후처럼 `.next/`가 아직 없는 상태에서는 이 부분만 검사에서 빠지므로, 라우트 타입까지 확인하려면 `npm run dev` 또는 `npm run build`를 한 번 실행한 뒤 `npm run typecheck`를 돌립니다.
 
 ---
 
