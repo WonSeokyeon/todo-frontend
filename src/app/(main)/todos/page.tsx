@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/common/Pagination";
 import { TodoList } from "@/components/todo/TodoList";
-import { useDeleteTodo, useToggleTodo, useTodos } from "@/hooks/useTodos";
+import { useDeleteTodo, useTodos } from "@/hooks/useTodos";
 import { ApiClientError } from "@/lib/apiClient";
 import { toDisplayMessage } from "@/lib/errorMessages";
 
@@ -70,7 +70,6 @@ function TodosContent() {
     keyword: keyword || undefined,
   });
 
-  const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
 
   function handleDelete(id: number) {
@@ -131,7 +130,6 @@ function TodosContent() {
         onRetry={() => query.refetch()}
         hasKeyword={keyword.length > 0}
         onCreate={() => router.push("/todos/new")}
-        onToggle={(id, completed) => toggleMutation.mutate({ id, completed })}
         onDelete={handleDelete}
         deletingId={deleteMutation.isPending ? (deleteMutation.variables ?? null) : null}
       />

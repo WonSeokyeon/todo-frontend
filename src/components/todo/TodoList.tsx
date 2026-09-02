@@ -1,5 +1,7 @@
 "use client";
 
+import { AnimatePresence } from "motion/react";
+
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { ListSkeleton } from "@/components/common/Skeleton";
@@ -14,7 +16,6 @@ interface TodoListProps {
   onRetry: () => void;
   hasKeyword: boolean;
   onCreate: () => void;
-  onToggle: (id: number, completed: boolean) => void;
   onDelete: (id: number) => void;
   deletingId: number | null;
 }
@@ -27,7 +28,6 @@ export function TodoList({
   onRetry,
   hasKeyword,
   onCreate,
-  onToggle,
   onDelete,
   deletingId,
 }: TodoListProps) {
@@ -51,15 +51,19 @@ export function TodoList({
 
   return (
     <ul className="flex flex-col gap-2">
-      {todos.map((todo) => (
-        <TodoItem
-          key={todo.id}
-          todo={todo}
-          onToggle={(completed) => onToggle(todo.id, completed)}
-          onDelete={() => onDelete(todo.id)}
-          isDeleting={deletingId === todo.id}
-        />
-      ))}
+      {/* initial을 생략(기본값 true)해야 AnimatePresence가 처음 마운트되는 시점(=목록이
+          화면에 처음 나타나는 시점)에도 진입 stagger가 재생된다 (CLAUDE.md 8장). */}
+      <AnimatePresence mode="popLayout">
+        {todos.map((todo, index) => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            index={index}
+            onDelete={() => onDelete(todo.id)}
+            isDeleting={deletingId === todo.id}
+          />
+        ))}
+      </AnimatePresence>
     </ul>
   );
 }

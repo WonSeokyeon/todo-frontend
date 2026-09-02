@@ -1,12 +1,16 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Trash2 } from "lucide-react";
+import { animate, motion, useReducedMotion } from "motion/react";
+import type { Variants } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToggleTodo } from "@/hooks/useTodos";
 import { cn } from "@/lib/utils";
 import type { Priority, TodoResponse } from "@/types/todo";
 
@@ -24,19 +28,65 @@ const PRIORITY_CLASS: Record<Priority, string> = {
 
 interface TodoItemProps {
   todo: TodoResponse;
-  onToggle: (completed: boolean) => void;
+  index: number;
   onDelete: () => void;
   isDeleting: boolean;
 }
 
-export function TodoItem({ todo, onToggle, onDelete, isDeleting }: TodoItemProps) {
+// entrance는 index로 stagger, exit는 별도 transition으로 분리해
+// entrance의 delay가 삭제(exit) 애니메이션에 섞여 들어가지 않게 한다.
+const listItemVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (index: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.2, delay: index * 0.03, ease: "easeOut" },
+  }),
+  exit: {
+    opacity: 0,
+    height: 0,
+    marginTop: 0,
+    marginBottom: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    transition: { duration: 0.15, ease: "easeIn" },
+  },
+};
+
+export function TodoItem({ todo, index, onDelete, isDeleting }: TodoItemProps) {
+  const toggleMutation = useToggleTodo(todo.id);
+  const shouldReduceMotion = useReducedMotion();
+  const checkboxScopeRef = useRef<HTMLSpanElement>(null);
+  const isFirstRender = useRef(true);
+
+  // 완료 상태가 실제로 바뀔 때만 펄스를 재생한다(마운트 시에는 재생하지 않는다).
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (shouldReduceMotion || !checkboxScopeRef.current) return;
+    animate(checkboxScopeRef.current, { scale: [1, 1.2, 1] }, { duration: 0.2, ease: "easeOut" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todo.completed]);
+
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
-      <Checkbox
-        checked={todo.completed}
-        onCheckedChange={(checked) => onToggle(checked === true)}
-        aria-label={todo.completed ? "완료 취소" : "완료로 표시"}
-      />
+    <motion.li
+      className="flex items-center gap-3 overflow-hidden rounded-xl border border-border bg-card p-4"
+      custom={index}
+      initial={shouldReduceMotion ? false : "hidden"}
+      animate="visible"
+      exit={shouldReduceMotion ? { opacity: 0, height: 0 } : "exit"}
+      variants={listItemVariants}
+      layout={!shouldReduceMotion}
+    >
+      <span ref={checkboxScopeRef} className="inline-flex">
+        <Checkbox
+          checked={todo.completed}
+          onCheckedChange={(checked) => toggleMutation.mutate(checked === true)}
+          aria-label={todo.completed ? "완료 취소" : "완료로 표시"}
+        />
+      </span>
 
       <Link
         href={`/todos/${todo.id}`}
@@ -73,6 +123,6 @@ export function TodoItem({ todo, onToggle, onDelete, isDeleting }: TodoItemProps
       >
         <Trash2 className="size-4" />
       </Button>
-    </li>
+    </motion.li>
   );
 }
