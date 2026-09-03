@@ -63,6 +63,17 @@ function Toolbar({ editor }: { editor: Editor }) {
     }
     const url = window.prompt("링크 URL을 입력하세요");
     if (!url) return;
+    // setLink는 마크 명령이라 선택된 텍스트가 없으면(커서만 있으면) 화면에 아무 변화도
+    // 없이 "다음 입력에 적용될 마크"로만 저장된다 — 링크가 눈에 안 보여 안 되는 것처럼
+    // 느껴지는 원인. 선택이 없을 때는 URL 자체를 링크 텍스트로 삽입한다.
+    if (editor.state.selection.empty) {
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: "text", text: url, marks: [{ type: "link", attrs: { href: url } }] })
+        .run();
+      return;
+    }
     editor.chain().focus().setLink({ href: url }).run();
   }
 
