@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import dynamic from "next/dynamic";
-import { format } from "date-fns";
+import { format, startOfToday } from "date-fns";
 import { ko } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 
@@ -197,6 +197,8 @@ export function TodoForm({
                   setDueDate(date ? format(date, "yyyy-MM-dd") : null);
                   setDueDateOpen(false);
                 }}
+                // 오늘 이전 날짜는 선택 불가. 오늘(00:00)부터는 선택 가능하도록 before는 오늘 자정으로 둔다.
+                disabled={{ before: startOfToday() }}
               />
               {dueDate && (
                 <div className="border-t border-border p-2">
