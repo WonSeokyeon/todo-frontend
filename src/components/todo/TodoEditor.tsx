@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { RICH_TEXT_CONTENT_CLASS } from "@/lib/richTextContentClass";
 import { buildTiptapExtensions } from "@/lib/tiptapExtensions";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
@@ -166,15 +167,7 @@ export function TodoEditor({ content, onChange, onReady }: TodoEditorProps) {
     editorProps: {
       attributes: {
         // @tailwindcss/typography 없이, 허용된 태그(sanitize.ts)에 맞춘 최소 스타일만 직접 지정한다.
-        class: cn(
-          "min-h-40 px-3 py-2 text-sm focus:outline-none",
-          "[&_h2]:mt-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:mt-2 [&_h3]:text-base [&_h3]:font-semibold [&_p]:my-2",
-          "[&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5",
-          "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
-          "[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5",
-          "[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0",
-          "[&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4",
-        ),
+        class: cn("min-h-40 px-3 py-2 text-sm focus:outline-none", RICH_TEXT_CONTENT_CLASS),
       },
     },
   });

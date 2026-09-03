@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { animate, motion, useReducedMotion } from "motion/react";
 import type { Variants } from "motion/react";
 
@@ -99,6 +99,7 @@ export function TodoItem({ todo, index, onDelete, isDeleting }: TodoItemProps) {
         />
       </span>
 
+      {/* 제목을 누르면 확인(읽기 전용) 화면으로 간다. 수정은 아래 별도 버튼으로만 들어간다. */}
       <Link
         href={`/todos/${todo.id}`}
         className={cn(
@@ -124,6 +125,12 @@ export function TodoItem({ todo, index, onDelete, isDeleting }: TodoItemProps) {
           {format(new Date(todo.dueDate), "M월 d일", { locale: ko })}
         </span>
       )}
+
+      <Button variant="ghost" size="icon-xs" aria-label="수정" asChild>
+        <Link href={`/todos/${todo.id}/edit`}>
+          <Pencil className="size-4" />
+        </Link>
+      </Button>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
