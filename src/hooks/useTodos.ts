@@ -39,9 +39,20 @@ function restoreTodos(queryClient: QueryClient, snapshot: TodosSnapshot): void {
 }
 
 export function useTodos(params: TodoListParams) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: queryKeys.todos(params),
-    queryFn: () => apiClient.get<PageResponse<TodoResponse>>(buildListPath(params)),
+    queryFn: async () => {
+      const data = await apiClient.get<PageResponse<TodoResponse>>(buildListPath(params));
+      // 목록 응답의 각 항목은 상세 조회와 동일한 필드(본문 포함)를 이미 담고 있다
+      // (TodoResponse.from을 목록·상세가 그대로 공유 — todo-backend TodoService 확인).
+      // 상세/수정 캐시를 미리 채워두면 목록에서 이동할 때 useTodo가 즉시 데이터를 갖고
+      // 있어 FormSkeleton이 뜨지 않는다.
+      data.content.forEach((todo) => {
+        queryClient.setQueryData(queryKeys.todo(todo.id), todo);
+      });
+      return data;
+    },
   });
 }
 
