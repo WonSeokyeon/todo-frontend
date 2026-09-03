@@ -25,7 +25,10 @@ export default function TodoDetailPage({ params }: TodoDetailPageProps) {
   const deleteMutation = useDeleteTodo();
 
   function handleSubmit(values: TodoFormValues) {
-    updateMutation.mutate(values);
+    updateMutation.mutate(values, {
+      // 저장 성공이 확정된 뒤에만 이동한다(handleDelete와 동일한 이유).
+      onSuccess: () => router.push("/todos"),
+    });
   }
 
   function handleDelete() {
@@ -72,9 +75,8 @@ export default function TodoDetailPage({ params }: TodoDetailPageProps) {
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold">할 일 수정</h1>
       <TodoForm
-        // 저장 성공 시 서버가 새 updatedAt을 반환 → 캐시가 갱신되며 key가 바뀌어 폼이
-        // 리마운트된다. dirty 스냅샷이 방금 저장한 값으로 다시 잡혀 "저장 직후에는
-        // 확인 대화상자가 뜨지 않음"이 자연스럽게 성립한다.
+        // 저장 성공 시 handleSubmit이 목록으로 이동시키므로 이 폼은 사라진다. key는
+        // 저장 실패로 화면에 남아 있는 동안 서버 데이터가 바뀌는 경우를 위한 안전장치다.
         key={query.data.updatedAt}
         initialValues={{
           title: query.data.title,
