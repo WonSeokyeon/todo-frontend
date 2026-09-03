@@ -8,6 +8,17 @@ import { Trash2 } from "lucide-react";
 import { animate, motion, useReducedMotion } from "motion/react";
 import type { Variants } from "motion/react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToggleTodo } from "@/hooks/useTodos";
@@ -114,15 +125,23 @@ export function TodoItem({ todo, index, onDelete, isDeleting }: TodoItemProps) {
         </span>
       )}
 
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        aria-label="삭제"
-        onClick={onDelete}
-        disabled={isDeleting}
-      >
-        <Trash2 className="size-4" />
-      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="icon-xs" aria-label="삭제" disabled={isDeleting}>
+            <Trash2 className="size-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>이 작업은 되돌릴 수 없습니다.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={onDelete}>삭제</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.li>
   );
 }
