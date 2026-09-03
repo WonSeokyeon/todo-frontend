@@ -114,6 +114,15 @@ export function TodoForm({
     title.length > 0 && !validateTitle(title) ? "제목은 1~200자여야 합니다." : null;
   const canSubmit =
     validateTitle(title) && validateContentLength(content) && !isSubmitting && !isDeleting;
+  // 생성/수정 구분은 초기값 유무로만 한다 — 삭제 버튼 노출과 같은 기준 (CLAUDE.md 7장).
+  const isEditMode = initialValues !== undefined;
+  const submitLabel = isSubmitting
+    ? isEditMode
+      ? "수정 중..."
+      : "저장 중..."
+    : isEditMode
+      ? "수정"
+      : "저장";
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -250,7 +259,7 @@ export function TodoForm({
           취소
         </Button>
         <Button type="submit" disabled={!canSubmit}>
-          {isSubmitting ? "저장 중..." : "저장"}
+          {submitLabel}
         </Button>
       </div>
     </form>
