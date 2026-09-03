@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TodoEditor } from "@/components/todo/TodoEditor";
+import { EditorSkeleton } from "@/components/common/Skeleton";
 import { useLeaveGuard } from "@/hooks/useLeaveGuard";
 import { validateContentLength, validateTitle } from "@/lib/validation";
 import type { Priority } from "@/types/todo";
@@ -44,6 +45,13 @@ interface TodoFormProps {
   isDeleting?: boolean;
   submitError?: string | null;
 }
+
+// Tiptap(+ProseMirror)이 First Load JS를 크게 늘리므로(약 230kB+) 클라이언트 전용으로
+// 지연 로드한다. 이 폼은 이미 "use client" 페이지에서만 쓰이므로 ssr:false로 안전하다.
+const TodoEditor = dynamic(() => import("@/components/todo/TodoEditor").then((m) => m.TodoEditor), {
+  ssr: false,
+  loading: () => <EditorSkeleton />,
+});
 
 const DEFAULT_VALUES: TodoFormValues = {
   title: "",
