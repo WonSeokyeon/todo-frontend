@@ -10,11 +10,11 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { FormSkeleton } from "@/components/common/Skeleton";
 import { Button } from "@/components/ui/button";
+import { useRenderedContent } from "@/hooks/useAttachments";
 import { useTodo } from "@/hooks/useTodos";
 import { ApiClientError } from "@/lib/apiClient";
 import { toDisplayMessage } from "@/lib/errorMessages";
 import { RICH_TEXT_CONTENT_CLASS } from "@/lib/richTextContentClass";
-import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import type { Priority } from "@/types/todo";
 
@@ -42,6 +42,9 @@ export default function TodoDetailPage({ params }: TodoDetailPageProps) {
   const router = useRouter();
 
   const query = useTodo(todoId);
+  // 정화 → 첨부 URL 주입까지 끝난 HTML.
+  // 훅은 조건부로 호출할 수 없으므로 아래 조기 반환들보다 위에 둔다.
+  const rendered = useRenderedContent(query.data?.content);
 
   const isNotFound =
     query.error instanceof ApiClientError && query.error.error.code === "TODO_NOT_FOUND";
@@ -102,8 +105,9 @@ export default function TodoDetailPage({ params }: TodoDetailPageProps) {
           "min-h-40 rounded-lg border border-input px-3 py-2 text-sm",
           RICH_TEXT_CONTENT_CLASS,
         )}
-        // 서버에서 받은 본문을 렌더링 직전에 DOMPurify로 한 번 더 정화한다 (CLAUDE.md 6장).
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(todo.content ?? "") }}
+        // 서버에서 받은 본문을 DOMPurify로 정화한 뒤 첨부 조회 URL을 주입한 결과다.
+        // 순서를 뒤집으면 주입한 src를 정화가 지운다 (CLAUDE.md 6장).
+        dangerouslySetInnerHTML={{ __html: rendered.html }}
       />
 
       <div className="flex justify-end gap-2 pt-2">

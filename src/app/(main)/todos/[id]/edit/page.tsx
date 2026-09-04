@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { FormSkeleton } from "@/components/common/Skeleton";
 import { TodoForm, type TodoFormValues } from "@/components/todo/TodoForm";
+import { useRenderedContent } from "@/hooks/useAttachments";
 import { useDeleteTodo, useTodo, useUpdateTodo } from "@/hooks/useTodos";
 import { ApiClientError } from "@/lib/apiClient";
 import { toDisplayMessage } from "@/lib/errorMessages";
@@ -23,6 +24,8 @@ export default function TodoEditPage({ params }: TodoEditPageProps) {
   const query = useTodo(todoId);
   const updateMutation = useUpdateTodo(todoId);
   const deleteMutation = useDeleteTodo();
+  // 에디터에 넣을 본문. 첨부가 있으면 조회 URL이 주입된 HTML이다.
+  const rendered = useRenderedContent(query.data?.content);
 
   function handleSubmit(values: TodoFormValues) {
     updateMutation.mutate(values, {
@@ -54,8 +57,11 @@ export default function TodoEditPage({ params }: TodoEditPageProps) {
 
   // data가 한 번이라도 로드됐다면(예: 저장 실패 중 백그라운드 refetch가 실패한 경우) 폼을 계속 보여준다.
   // isError만 보고 화면을 통째로 바꾸면, 이미 입력 중이던 내용이 사용자 눈에 사라진 것처럼 보인다 (TODO-13).
-  if (!query.data) {
-    if (query.isPending) {
+  // 첨부 URL 주입이 끝나기 전에 폼을 마운트하면 안 된다. TodoForm은 마운트 직후의
+  // 에디터 HTML을 dirty 판정 baseline으로 잡는데, 주입이 그 뒤에 일어나면 사용자가
+  // 아무것도 고치지 않아도 dirty가 되어 이탈 확인창이 뜬다 (CLAUDE.md 9장).
+  if (!query.data || !rendered.isReady) {
+    if (query.isPending || (query.data && !rendered.isReady)) {
       return <FormSkeleton />;
     }
     const message =
@@ -81,7 +87,9 @@ export default function TodoEditPage({ params }: TodoEditPageProps) {
         key={query.data.updatedAt}
         initialValues={{
           title: query.data.title,
-          content: query.data.content ?? "",
+          // 서버 원본이 아니라 첨부 URL이 주입된 HTML을 넘긴다. 그래야 에디터에
+          // 이미지가 보이고, dirty baseline도 화면에 보이는 것과 같은 값으로 잡힌다.
+          content: rendered.html,
           priority: query.data.priority,
           dueDate: query.data.dueDate,
         }}

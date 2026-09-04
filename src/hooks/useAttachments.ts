@@ -1,7 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { collectAttachmentIds, injectAttachmentSrc, toUrlMap } from "@/lib/attachmentHtml";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { queryKeys } from "@/lib/queryClient";
 import { validateImageFile } from "@/lib/validation";
 import type {
@@ -81,4 +84,31 @@ export function useAttachmentUrls(ids: number[]) {
 
 export async function deleteAttachment(attachmentId: number): Promise<void> {
   await apiClient.delete<void>(`/attachments/${attachmentId}`);
+}
+
+/**
+ * 본문 HTML을 화면에 그릴 수 있는 형태로 만든다.
+ *
+ * 정화 → 조회 URL 주입 순서를 강제한다. 반대로 하면 방금 넣은 src를 DOMPurify가 지운다.
+ * 확인 화면과 수정 화면이 같은 파이프라인을 쓰도록 훅으로 묶었다.
+ *
+ * isReady는 "URL 주입까지 끝났는가"다. 수정 화면은 이 값이 true가 될 때까지 폼을
+ * 마운트하면 안 된다 — 주입이 dirty 판정 baseline 확정 뒤에 일어나면 사용자가
+ * 아무것도 고치지 않아도 이탈 확인창이 뜬다 (CLAUDE.md 9장).
+ */
+export function useRenderedContent(html: string | null | undefined) {
+  const ids = useMemo(() => collectAttachmentIds(html), [html]);
+  const urlsQuery = useAttachmentUrls(ids);
+
+  const rendered = useMemo(() => {
+    const sanitized = sanitizeHtml(html ?? "");
+    if (ids.length === 0 || !urlsQuery.data) return sanitized;
+    return injectAttachmentSrc(sanitized, toUrlMap(urlsQuery.data));
+  }, [html, ids, urlsQuery.data]);
+
+  return {
+    html: rendered,
+    // 첨부가 없으면 기다릴 것이 없다. 조회에 실패해도(깨진 이미지) 화면은 그린다.
+    isReady: ids.length === 0 || !urlsQuery.isPending,
+  };
 }

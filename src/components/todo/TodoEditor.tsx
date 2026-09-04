@@ -6,6 +6,7 @@ import {
   Code,
   Heading2,
   Heading3,
+  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -13,12 +14,87 @@ import {
   Quote,
   SquareCode,
 } from "lucide-react";
+import { useRef } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { uploadAttachment } from "@/hooks/useAttachments";
 import { RICH_TEXT_CONTENT_CLASS } from "@/lib/richTextContentClass";
 import { buildTiptapExtensions } from "@/lib/tiptapExtensions";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
+import { validateImageFile } from "@/lib/validation";
+
+/**
+ * 삽입된 임시 이미지 노드를 blob URL로 찾아 콜백에 넘긴다.
+ * 업로드가 끝나는 시점에는 사용자가 이미 커서를 옮겼을 수 있어, 위치가 아니라 src로 찾는다.
+ */
+function withImageNode(
+  editor: Editor,
+  blobUrl: string,
+  handler: (pos: number, node: { nodeSize: number; attrs: Record<string, unknown> }) => void,
+): void {
+  let done = false;
+  editor.state.doc.descendants((node, pos) => {
+    if (done) return false;
+    if (node.type.name === "image" && node.attrs.src === blobUrl) {
+      done = true;
+      handler(pos, node);
+      return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * 이미지를 즉시 미리보기로 넣고, 업로드가 끝나면 실제 URL과 첨부 ID로 교체한다.
+ * 실패하면 넣었던 노드를 지우고 토스트로 알린다.
+ */
+async function insertImage(editor: Editor, file: File): Promise<void> {
+  const message = validateImageFile(file);
+  if (message) {
+    toast.error(message);
+    return;
+  }
+
+  // 업로드를 기다리지 않고 먼저 그린다. 사용자는 즉시 반응을 본다.
+  const blobUrl = URL.createObjectURL(file);
+  editor.chain().focus().setImage({ src: blobUrl, alt: file.name }).run();
+
+  try {
+    const { attachmentId, viewUrl } = await uploadAttachment(file);
+    // await 사이에 화면을 벗어났을 수 있다.
+    if (editor.isDestroyed) return;
+
+    withImageNode(editor, blobUrl, (pos, node) => {
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          src: viewUrl,
+          attachmentId,
+        }),
+      );
+    });
+  } catch (error) {
+    if (!editor.isDestroyed) {
+      withImageNode(editor, blobUrl, (pos, node) => {
+        editor.view.dispatch(editor.state.tr.delete(pos, pos + node.nodeSize));
+      });
+    }
+    toast.error(error instanceof Error ? error.message : "이미지 업로드에 실패했습니다.");
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+/** 파일 목록에서 이미지만 골라 순서대로 업로드한다. */
+function uploadImageFiles(editor: Editor, files: FileList | File[]): boolean {
+  const images = Array.from(files).filter((file) => file.type.startsWith("image/"));
+  if (images.length === 0) return false;
+
+  images.forEach((file) => void insertImage(editor, file));
+  return true;
+}
 
 interface TodoEditorProps {
   content: string;
@@ -56,7 +132,7 @@ function ToolbarButton({
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, onPickImage }: { editor: Editor; onPickImage: () => void }) {
   function toggleLink() {
     if (editor.isActive("link")) {
       editor.chain().focus().unsetLink().run();
@@ -146,11 +222,19 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <Quote className="size-4" />
       </ToolbarButton>
+      <ToolbarButton label="이미지" active={false} onClick={onPickImage}>
+        <ImageIcon className="size-4" />
+      </ToolbarButton>
     </div>
   );
 }
 
 export function TodoEditor({ content, onChange, onReady }: TodoEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // handlePaste·handleDrop은 useEditor가 반환하기 전에 정의되므로 editor를 직접 참조할 수 없다.
+  // 콜백이 실제로 호출되는 시점에는 이미 채워져 있다.
+  const editorRef = useRef<Editor | null>(null);
+
   const editor = useEditor({
     extensions: buildTiptapExtensions(),
     content: sanitizeHtml(content),
@@ -169,13 +253,47 @@ export function TodoEditor({ content, onChange, onReady }: TodoEditorProps) {
         // @tailwindcss/typography 없이, 허용된 태그(sanitize.ts)에 맞춘 최소 스타일만 직접 지정한다.
         class: cn("min-h-40 px-3 py-2 text-sm focus:outline-none", RICH_TEXT_CONTENT_CLASS),
       },
+      // 클립보드 이미지를 가로챈다. 그냥 두면 base64 data URI가 본문에 들어가
+      // content 50,000자 제한을 넘기고, 정화가 src를 지워 이미지가 조용히 사라진다.
+      handlePaste: (_view, event) => {
+        const current = editorRef.current;
+        const files = event.clipboardData?.files;
+        if (!current || !files || files.length === 0) return false;
+        // true를 반환하면 Tiptap 기본 붙여넣기가 실행되지 않는다.
+        return uploadImageFiles(current, files);
+      },
+      handleDrop: (_view, event) => {
+        const current = editorRef.current;
+        const files = (event as DragEvent).dataTransfer?.files;
+        if (!current || !files || files.length === 0) return false;
+        return uploadImageFiles(current, files);
+      },
     },
   });
 
+  editorRef.current = editor;
+
+  function handleFilesSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    if (files && editor) {
+      uploadImageFiles(editor, files);
+    }
+    // 같은 파일을 연속으로 고를 수 있도록 값을 비운다.
+    event.target.value = "";
+  }
+
   return (
     <div className={cn("overflow-hidden rounded-lg border border-input")}>
-      {editor && <Toolbar editor={editor} />}
+      {editor && <Toolbar editor={editor} onPickImage={() => fileInputRef.current?.click()} />}
       <EditorContent editor={editor} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        multiple
+        hidden
+        onChange={handleFilesSelected}
+      />
     </div>
   );
 }

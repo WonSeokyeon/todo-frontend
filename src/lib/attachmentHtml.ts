@@ -11,7 +11,8 @@ const ATTACHMENT_ID_ATTR = "data-attachment-id";
  * 정화 전후 어느 쪽에 써도 되지만, 실제 사용은 서버가 준 HTML(=이미 정화된 것) 기준이다.
  */
 export function collectAttachmentIds(html: string | null | undefined): number[] {
-  if (!html) return [];
+  // document를 쓰므로 클라이언트 전용이다. 프리렌더 중 호출되어도 터지지 않게 막는다.
+  if (!html || typeof document === "undefined") return [];
 
   const template = document.createElement("template");
   template.innerHTML = html;
@@ -38,7 +39,7 @@ export function collectAttachmentIds(html: string | null | undefined): number[] 
  * @param urlMap 첨부 ID → 조회 URL
  */
 export function injectAttachmentSrc(sanitizedHtml: string, urlMap: Map<number, string>): string {
-  if (!sanitizedHtml) return sanitizedHtml;
+  if (!sanitizedHtml || typeof document === "undefined") return sanitizedHtml;
 
   const template = document.createElement("template");
   template.innerHTML = sanitizedHtml;
