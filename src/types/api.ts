@@ -8,7 +8,9 @@ export type ErrorCode =
   | "INVALID_RESET_TOKEN"
   | "FORBIDDEN"
   | "TODO_NOT_FOUND"
+  | "ATTACHMENT_NOT_FOUND"
   | "EMAIL_DUPLICATED"
+  | "ATTACHMENT_INVALID_STATE"
   | "INTERNAL_ERROR";
 
 export interface ApiError {

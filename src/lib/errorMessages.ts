@@ -12,6 +12,8 @@ const MESSAGES: Record<string, string> = {
   INVALID_RESET_TOKEN: "만료되었거나 이미 사용된 링크입니다.",
   EMAIL_DUPLICATED: "이미 사용 중인 이메일입니다.",
   TODO_NOT_FOUND: "할 일을 찾을 수 없습니다.",
+  ATTACHMENT_NOT_FOUND: "이미지를 찾을 수 없습니다.",
+  ATTACHMENT_INVALID_STATE: "이미 업로드된 이미지입니다.",
   INTERNAL_ERROR: "일시적인 오류가 발생했습니다. 다시 시도해 주세요.",
   [NETWORK_ERROR_CODE]: "연결에 실패했습니다.",
 };

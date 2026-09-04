@@ -32,3 +32,23 @@ export function validatePassword(value: string): {
   if (new TextEncoder().encode(value).length > 72) return { valid: false, reason: "too-long" };
   return { valid: true };
 }
+
+/** 첨부 이미지 제약. 백엔드 app.upload.* 설정과 같은 값을 유지한다 (CLAUDE.md 5장). */
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+/**
+ * 업로드 전에 타입·크기를 미리 확인해 불필요한 왕복을 막는다.
+ * 서버 검증(화이트리스트 + 매직바이트)은 그대로 유지된다 — 이건 편의 장치다.
+ *
+ * @returns 문제가 없으면 null, 있으면 사용자에게 보여줄 문구
+ */
+export function validateImageFile(file: File): string | null {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return "JPEG, PNG, GIF, WebP 이미지만 첨부할 수 있습니다.";
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return "이미지는 5MB 이하만 첨부할 수 있습니다.";
+  }
+  return null;
+}
