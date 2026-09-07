@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { uploadAttachment } from "@/hooks/useAttachments";
 import { RICH_TEXT_CONTENT_CLASS } from "@/lib/richTextContentClass";
 import { buildTiptapExtensions } from "@/lib/tiptapExtensions";
-import { sanitizeHtml } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { validateImageFile } from "@/lib/validation";
 
@@ -237,7 +236,12 @@ export function TodoEditor({ content, onChange, onReady }: TodoEditorProps) {
 
   const editor = useEditor({
     extensions: buildTiptapExtensions(),
-    content: sanitizeHtml(content),
+    // content는 항상 이미 안전한 값이다 — 새 글은 빈 문자열, 기존 글은
+    // useRenderedContent(sanitizeHtml → 첨부 URL 주입)를 거친 결과다. 여기서 다시
+    // sanitizeHtml을 걸면 img의 src(ALLOWED_ATTR에 없음)가 지워지고, src 없는 img는
+    // Tiptap 기본 Image 확장의 파싱 규칙(img[src])에 걸려 노드 자체가 사라진다
+    // (수정 화면 재진입 시 이미지가 통째로 사라지는 회귀 — 2026-09-07 실측 발견).
+    content,
     // Next.js SSR과 함께 쓸 때 하이드레이션 시점 렌더링을 막아 불일치를 방지한다 (Tiptap 공식 권장).
     immediatelyRender: false,
     onCreate: ({ editor }) => {
